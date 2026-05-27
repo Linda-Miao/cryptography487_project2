@@ -1,18 +1,19 @@
-// cryptography 487 project2
-// Linda Miao 
+// TCSS 487 Cryptography Project 2
+// Authors: Rudolf Arakelyan (rudik30) and Linda Miao
 
 /*
-WHAT: it is definng the NUMW ed-256-mers* elliptic curve.
-      it stores the three core constants that describe the curve and the mathematical field it lives in.
-Why: Every operation in this project (encryption, signatures, key nereration) depends on these three nubers: 
-    - p: all point cooredinated (x,y) are computed mod p
-    - d: the curve shape coefficient in x^2+y^2 = 1 + d*x^2*y^2
-    - r: all private keys and nonces are computed mod r
-How: The Edwared constructor hard-codes the NUMS-256 parameters 
-    from the project spec using java's BigInteger class, which handles arbitrarily large integers precisely.
-    (These numbers are ~256 bits, far too big for in or long)
-import java.math.BigInteger;
-*/
+ * WHAT: Defines the NUMS ed-256-mers* Edwards elliptic curve and its
+ *       nested Point class implementing the curve arithmetic.
+ * WHY:  Every operation in this project (encryption, signatures, key generation)
+ *       depends on these three numbers:
+ *         - p: all point coordinates (x, y) are computed mod p
+ *         - d: the curve shape coefficient in x^2 + y^2 = 1 + d*x^2*y^2
+ *         - r: all private keys and nonces are computed mod r
+ * HOW:  The Edwards constructor hard-codes the NUMS-256 parameters from the
+ *       project spec using java's BigInteger class, which handles arbitrarily
+ *       large integers precisely (these numbers are ~256 bits, far too big
+ *       for int or long).
+ */
 
 import java.math.BigInteger;
 
@@ -162,11 +163,19 @@ public class Edwards {
             return new Point();
         }
 
-        // if point is not on curve or not of order r, return 0
+        // verify (x, y) is actually on the curve
         if(!isPoint(x,y)){
             return new Point();
         }
-        return new Point(x,y);
+        // spec (Appendix D) requires the returned point to have order r.
+        // a point P has order dividing r iff r*P = O. since r is prime,
+        // a non-O point with r*P = O has order exactly r — exactly what we want.
+        // this rejects low-order points and protects against small-subgroup attacks.
+        Point P = new Point(x, y);
+        if (!P.mul(r).isZero()) {
+            return new Point();
+        }
+        return P;
     }
     /* 
     WHAT: Point reprecents a single point (x,y) on the Edwards curve
